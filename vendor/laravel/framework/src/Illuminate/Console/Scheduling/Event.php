@@ -7,7 +7,6 @@ use Cron\CronExpression;
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\ClientInterface as HttpClientInterface;
 use GuzzleHttp\Exception\TransferException;
-use Illuminate\Console\Application;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Mail\Mailer;
@@ -61,6 +60,13 @@ class Event
     protected $afterCallbacks = [];
 
     /**
+     * The human readable description of the event.
+     *
+     * @var string|null
+     */
+    public $description;
+
+    /**
      * The event mutex implementation.
      *
      * @var \Illuminate\Console\Scheduling\EventMutex
@@ -96,6 +102,7 @@ class Event
      * @param  \Illuminate\Console\Scheduling\EventMutex  $mutex
      * @param  string  $command
      * @param  \DateTimeZone|string|null  $timezone
+     * @return void
      */
     public function __construct(EventMutex $mutex, $command, $timezone = null)
     {
@@ -199,11 +206,7 @@ class Event
     {
         return Process::fromShellCommandline(
             $this->buildCommand(), base_path(), null, null, null
-        )->run(
-            laravel_cloud()
-                ? fn ($type, $line) => fwrite($type === 'out' ? STDOUT : STDERR, $line)
-                : fn () => true
-        );
+        )->run();
     }
 
     /**
@@ -386,7 +389,7 @@ class Event
      *
      * @throws \LogicException
      */
-    public function emailOutputTo($addresses, $onlyIfOutputExists = true)
+    public function emailOutputTo($addresses, $onlyIfOutputExists = false)
     {
         $this->ensureOutputIsBeingCaptured();
 
@@ -447,7 +450,7 @@ class Event
      * @param  bool  $onlyIfOutputExists
      * @return void
      */
-    protected function emailOutput(Mailer $mailer, $addresses, $onlyIfOutputExists = true)
+    protected function emailOutput(Mailer $mailer, $addresses, $onlyIfOutputExists = false)
     {
         $text = is_file($this->output) ? file_get_contents($this->output) : '';
 
@@ -532,18 +535,6 @@ class Event
     }
 
     /**
-     * Register a callback to ping a given URL if the operation succeeds and if the given condition is true.
-     *
-     * @param  bool  $value
-     * @param  string  $url
-     * @return $this
-     */
-    public function pingOnSuccessIf($value, $url)
-    {
-        return $value ? $this->onSuccess($this->pingCallback($url)) : $this;
-    }
-
-    /**
      * Register a callback to ping a given URL if the operation fails.
      *
      * @param  string  $url
@@ -552,18 +543,6 @@ class Event
     public function pingOnFailure($url)
     {
         return $this->onFailure($this->pingCallback($url));
-    }
-
-    /**
-     * Register a callback to ping a given URL if the operation fails and if the given condition is true.
-     *
-     * @param  bool  $value
-     * @param  string  $url
-     * @return $this
-     */
-    public function pingOnFailureIf($value, $url)
-    {
-        return $value ? $this->onFailure($this->pingCallback($url)) : $this;
     }
 
     /**
@@ -742,9 +721,33 @@ class Event
             $output = $this->output && is_file($this->output) ? file_get_contents($this->output) : '';
 
             return $onlyIfOutputExists && empty($output)
-                ? null
-                : $container->call($callback, ['output' => new Stringable($output)]);
+                            ? null
+                            : $container->call($callback, ['output' => new Stringable($output)]);
         };
+    }
+
+    /**
+     * Set the human-friendly description of the event.
+     *
+     * @param  string  $description
+     * @return $this
+     */
+    public function name($description)
+    {
+        return $this->description($description);
+    }
+
+    /**
+     * Set the human-friendly description of the event.
+     *
+     * @param  string  $description
+     * @return $this
+     */
+    public function description($description)
+    {
+        $this->description = $description;
+
+        return $this;
     }
 
     /**
@@ -811,8 +814,7 @@ class Event
             return $mutexNameResolver($this);
         }
 
-        return 'framework'.DIRECTORY_SEPARATOR.'schedule-'.
-            sha1($this->expression.$this->normalizeCommand($this->command ?? ''));
+        return 'framework'.DIRECTORY_SEPARATOR.'schedule-'.sha1($this->expression.$this->command);
     }
 
     /**
@@ -838,22 +840,5 @@ class Event
         if ($this->withoutOverlapping) {
             $this->mutex->forget($this);
         }
-    }
-
-    /**
-     * Format the given command string with a normalized PHP binary path.
-     *
-     * @param  string  $command
-     * @return string
-     */
-    public static function normalizeCommand($command)
-    {
-        return str_replace([
-            Application::phpBinary(),
-            Application::artisanBinary(),
-        ], [
-            'php',
-            preg_replace("#['\"]#", '', Application::artisanBinary()),
-        ], $command);
     }
 }

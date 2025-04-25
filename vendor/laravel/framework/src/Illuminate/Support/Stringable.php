@@ -27,6 +27,7 @@ class Stringable implements JsonSerializable, ArrayAccess, BaseStringable
      * Create a new instance of the class.
      *
      * @param  string  $value
+     * @return void
      */
     public function __construct($value = '')
     {
@@ -303,7 +304,7 @@ class Stringable implements JsonSerializable, ArrayAccess, BaseStringable
      */
     public function explode($delimiter, $limit = PHP_INT_MAX)
     {
-        return new Collection(explode($delimiter, $this->value, $limit));
+        return collect(explode($delimiter, $this->value, $limit));
     }
 
     /**
@@ -317,12 +318,12 @@ class Stringable implements JsonSerializable, ArrayAccess, BaseStringable
     public function split($pattern, $limit = -1, $flags = 0)
     {
         if (filter_var($pattern, FILTER_VALIDATE_INT) !== false) {
-            return new Collection(mb_str_split($this->value, $pattern));
+            return collect(mb_str_split($this->value, $pattern));
         }
 
         $segments = preg_split($pattern, $this->value, $limit, $flags);
 
-        return ! empty($segments) ? new Collection($segments) : new Collection;
+        return ! empty($segments) ? collect($segments) : collect();
     }
 
     /**
@@ -340,12 +341,11 @@ class Stringable implements JsonSerializable, ArrayAccess, BaseStringable
      * Determine if a given string matches a given pattern.
      *
      * @param  string|iterable<string>  $pattern
-     * @param  bool  $ignoreCase
      * @return bool
      */
-    public function is($pattern, $ignoreCase = false)
+    public function is($pattern)
     {
-        return Str::is($pattern, $this->value, $ignoreCase);
+        return Str::is($pattern, $this->value);
     }
 
     /**
@@ -635,17 +635,6 @@ class Stringable implements JsonSerializable, ArrayAccess, BaseStringable
     }
 
     /**
-     * Pluralize the last word of an English, Pascal caps case string.
-     *
-     * @param  int|array|\Countable  $count
-     * @return static
-     */
-    public function pluralPascal($count = 2)
-    {
-        return new static(Str::pluralStudly($this->value, $count));
-    }
-
-    /**
      * Find the multi-byte safe position of the first occurrence of the given substring.
      *
      * @param  string  $needle
@@ -800,7 +789,7 @@ class Stringable implements JsonSerializable, ArrayAccess, BaseStringable
      */
     public function scan($format)
     {
-        return new Collection(sscanf($this->value, $format));
+        return collect(sscanf($this->value, $format));
     }
 
     /**
@@ -943,16 +932,6 @@ class Stringable implements JsonSerializable, ArrayAccess, BaseStringable
     }
 
     /**
-     * Convert the string to Pascal case.
-     *
-     * @return static
-     */
-    public function pascal()
-    {
-        return new static(Str::pascal($this->value));
-    }
-
-    /**
      * Returns the portion of the string specified by the start and length parameters.
      *
      * @param  int  $start
@@ -1077,7 +1056,7 @@ class Stringable implements JsonSerializable, ArrayAccess, BaseStringable
      */
     public function ucsplit()
     {
-        return new Collection(Str::ucsplit($this->value));
+        return collect(Str::ucsplit($this->value));
     }
 
     /**

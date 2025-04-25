@@ -1,0 +1,1 @@
+<?php echo app('Illuminate\Foundation\Vite')(['resources/scss/icons.scss', 'resources/scss/style.scss']); ?><?php /**PATH C:\Users\GustavoBueno\Betel-Web\resources\views/layouts/partials/head-css.blade.php ENDPATH**/ ?>

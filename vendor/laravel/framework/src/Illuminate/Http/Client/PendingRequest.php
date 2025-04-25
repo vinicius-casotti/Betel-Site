@@ -220,6 +220,7 @@ class PendingRequest
      *
      * @param  \Illuminate\Http\Client\Factory|null  $factory
      * @param  array  $middleware
+     * @return void
      */
     public function __construct(?Factory $factory = null, $middleware = [])
     {
@@ -235,7 +236,7 @@ class PendingRequest
             'timeout' => 30,
         ];
 
-        $this->beforeSendingCallbacks = new Collection([function (Request $request, array $options, PendingRequest $pendingRequest) {
+        $this->beforeSendingCallbacks = collect([function (Request $request, array $options, PendingRequest $pendingRequest) {
             $pendingRequest->request = $request;
             $pendingRequest->cookies = $options['cookies'];
 
@@ -574,10 +575,10 @@ class PendingRequest
     /**
      * Specify the timeout (in seconds) for the request.
      *
-     * @param  int|float  $seconds
+     * @param  int  $seconds
      * @return $this
      */
-    public function timeout(int|float $seconds)
+    public function timeout(int $seconds)
     {
         return tap($this, function () use ($seconds) {
             $this->options['timeout'] = $seconds;
@@ -587,10 +588,10 @@ class PendingRequest
     /**
      * Specify the connect timeout (in seconds) for the request.
      *
-     * @param  int|float  $seconds
+     * @param  int  $seconds
      * @return $this
      */
-    public function connectTimeout(int|float $seconds)
+    public function connectTimeout(int $seconds)
     {
         return tap($this, function () use ($seconds) {
             $this->options['connect_timeout'] = $seconds;
@@ -793,7 +794,7 @@ class PendingRequest
      * Issue a POST request to the given URL.
      *
      * @param  string  $url
-     * @param  array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable  $data
+     * @param  array  $data
      * @return \Illuminate\Http\Client\Response
      *
      * @throws \Illuminate\Http\Client\ConnectionException
@@ -809,7 +810,7 @@ class PendingRequest
      * Issue a PATCH request to the given URL.
      *
      * @param  string  $url
-     * @param  array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable  $data
+     * @param  array  $data
      * @return \Illuminate\Http\Client\Response
      *
      * @throws \Illuminate\Http\Client\ConnectionException
@@ -825,7 +826,7 @@ class PendingRequest
      * Issue a PUT request to the given URL.
      *
      * @param  string  $url
-     * @param  array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable  $data
+     * @param  array  $data
      * @return \Illuminate\Http\Client\Response
      *
      * @throws \Illuminate\Http\Client\ConnectionException
@@ -841,7 +842,7 @@ class PendingRequest
      * Issue a DELETE request to the given URL.
      *
      * @param  string  $url
-     * @param  array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable  $data
+     * @param  array  $data
      * @return \Illuminate\Http\Client\Response
      *
      * @throws \Illuminate\Http\Client\ConnectionException
@@ -910,7 +911,7 @@ class PendingRequest
 
                     if (! $response->successful()) {
                         try {
-                            $shouldRetry = $this->retryWhenCallback ? call_user_func($this->retryWhenCallback, $response->toException(), $this, $this->request->toPsrRequest()->getMethod()) : true;
+                            $shouldRetry = $this->retryWhenCallback ? call_user_func($this->retryWhenCallback, $response->toException(), $this) : true;
                         } catch (Exception $exception) {
                             $shouldRetry = false;
 
@@ -940,14 +941,14 @@ class PendingRequest
                 $exception = new ConnectionException($e->getMessage(), 0, $e);
                 $request = new Request($e->getRequest());
 
-                $this->factory?->recordRequestResponsePair($request, null);
+                $this->factory->recordRequestResponsePair($request, null);
 
                 $this->dispatchConnectionFailedEvent($request, $exception);
 
                 throw $exception;
             }
         }, $this->retryDelay ?? 100, function ($exception) use (&$shouldRetry) {
-            $result = $shouldRetry ?? ($this->retryWhenCallback ? call_user_func($this->retryWhenCallback, $exception, $this, $this->request?->toPsrRequest()->getMethod()) : true);
+            $result = $shouldRetry ?? ($this->retryWhenCallback ? call_user_func($this->retryWhenCallback, $exception, $this) : true);
 
             $shouldRetry = null;
 
@@ -990,15 +991,13 @@ class PendingRequest
             $options[$this->bodyFormat] = $this->pendingBody;
         }
 
-        return (new Collection($options))
-            ->map(function ($value, $key) {
-                if ($key === 'json' && $value instanceof JsonSerializable) {
-                    return $value;
-                }
+        return collect($options)->map(function ($value, $key) {
+            if ($key === 'json' && $value instanceof JsonSerializable) {
+                return $value;
+            }
 
-                return $value instanceof Arrayable ? $value->toArray() : $value;
-            })
-            ->all();
+            return $value instanceof Arrayable ? $value->toArray() : $value;
+        })->all();
     }
 
     /**
@@ -1009,10 +1008,9 @@ class PendingRequest
      */
     protected function parseMultipartBodyFormat(array $data)
     {
-        return (new Collection($data))
-            ->map(fn ($value, $key) => is_array($value) ? $value : ['name' => $key, 'contents' => $value])
-            ->values()
-            ->all();
+        return collect($data)->map(function ($value, $key) {
+            return is_array($value) ? $value : ['name' => $key, 'contents' => $value];
+        })->values()->all();
     }
 
     /**
@@ -1154,7 +1152,7 @@ class PendingRequest
 
         $laravelData = $options[$this->bodyFormat] ?? $options['query'] ?? [];
 
-        $urlString = (new Stringable($url));
+        $urlString = Str::of($url);
 
         if (empty($laravelData) && $method === 'GET' && $urlString->contains('?')) {
             $laravelData = (string) $urlString->after('?');
@@ -1326,11 +1324,11 @@ class PendingRequest
     {
         return function ($handler) {
             return function ($request, $options) use ($handler) {
-                $response = ($this->stubCallbacks ?? new Collection)
-                    ->map
-                    ->__invoke((new Request($request))->withData($options['laravel_data']), $options)
-                    ->filter()
-                    ->first();
+                $response = ($this->stubCallbacks ?? collect())
+                     ->map
+                     ->__invoke((new Request($request))->withData($options['laravel_data']), $options)
+                     ->filter()
+                     ->first();
 
                 if (is_null($response)) {
                     if ($this->preventStrayRequests) {
@@ -1432,7 +1430,7 @@ class PendingRequest
      */
     public function stub($callback)
     {
-        $this->stubCallbacks = new Collection($callback);
+        $this->stubCallbacks = collect($callback);
 
         return $this;
     }

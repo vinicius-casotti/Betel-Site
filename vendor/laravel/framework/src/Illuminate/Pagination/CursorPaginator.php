@@ -39,6 +39,7 @@ class CursorPaginator extends AbstractCursorPaginator implements Arrayable, Arra
      * @param  int  $perPage
      * @param  \Illuminate\Pagination\Cursor|null  $cursor
      * @param  array  $options  (path, query, fragment, pageName)
+     * @return void
      */
     public function __construct($items, $perPage, $cursor = null, array $options = [])
     {
@@ -63,7 +64,7 @@ class CursorPaginator extends AbstractCursorPaginator implements Arrayable, Arra
      */
     protected function setItems($items)
     {
-        $this->items = $items instanceof Collection ? $items : new Collection($items);
+        $this->items = $items instanceof Collection ? $items : Collection::make($items);
 
         $this->hasMore = $this->items->count() > $this->perPage;
 

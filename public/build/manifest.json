@@ -1,0 +1,40 @@
+{
+  "resources/fonts/materialdesignicons-webfont.eot": {
+    "file": "assets/materialdesignicons-webfont-B9wcoBQl.eot",
+    "src": "resources/fonts/materialdesignicons-webfont.eot"
+  },
+  "resources/fonts/materialdesignicons-webfont.ttf": {
+    "file": "assets/materialdesignicons-webfont-ZIKrZr_b.ttf",
+    "src": "resources/fonts/materialdesignicons-webfont.ttf"
+  },
+  "resources/fonts/materialdesignicons-webfont.woff": {
+    "file": "assets/materialdesignicons-webfont-CarK0Wuz.woff",
+    "src": "resources/fonts/materialdesignicons-webfont.woff"
+  },
+  "resources/fonts/materialdesignicons-webfont.woff2": {
+    "file": "assets/materialdesignicons-webfont-DrpJ-eO4.woff2",
+    "src": "resources/fonts/materialdesignicons-webfont.woff2"
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-DDYNoDNN.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  },
+  "resources/js/swiper.js": {
+    "file": "assets/swiper-C6ISH1VZ.js",
+    "name": "swiper",
+    "src": "resources/js/swiper.js",
+    "isEntry": true
+  },
+  "resources/scss/icons.scss": {
+    "file": "assets/icons-CeL3X2hY.css",
+    "src": "resources/scss/icons.scss",
+    "isEntry": true
+  },
+  "resources/scss/style.scss": {
+    "file": "assets/style-H5ZnekLA.css",
+    "src": "resources/scss/style.scss",
+    "isEntry": true
+  }
+}

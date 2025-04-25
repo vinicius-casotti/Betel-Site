@@ -161,12 +161,6 @@ final readonly class Merger
             $stopOnDeprecation = $xmlConfiguration->phpunit()->stopOnDeprecation();
         }
 
-        $specificDeprecationToStopOn = null;
-
-        if ($cliConfiguration->hasSpecificDeprecationToStopOn()) {
-            $specificDeprecationToStopOn = $cliConfiguration->specificDeprecationToStopOn();
-        }
-
         if ($cliConfiguration->hasStopOnError()) {
             $stopOnError = $cliConfiguration->stopOnError();
         } else {
@@ -228,7 +222,7 @@ final readonly class Merger
         if ($columns < 16) {
             $columns = 16;
 
-            EventFacade::emitter()->testRunnerTriggeredPhpunitWarning(
+            EventFacade::emitter()->testRunnerTriggeredWarning(
                 'Less than 16 columns requested, number of columns set to 16',
             );
         }
@@ -408,7 +402,7 @@ final readonly class Merger
         }
 
         if ($enforceTimeLimit && !(new Invoker)->canInvokeWithTimeout()) {
-            EventFacade::emitter()->testRunnerTriggeredPhpunitWarning(
+            EventFacade::emitter()->testRunnerTriggeredWarning(
                 'The pcntl extension is required for enforcing time limits',
             );
         }
@@ -660,11 +654,11 @@ final readonly class Merger
 
         if ($xmlConfiguration->wasLoadedFromFile() && $xmlConfiguration->hasValidationErrors()) {
             if ((new SchemaDetector)->detect($xmlConfiguration->filename())->detected()) {
-                EventFacade::emitter()->testRunnerTriggeredPhpunitDeprecation(
+                EventFacade::emitter()->testRunnerTriggeredDeprecation(
                     'Your XML configuration validates against a deprecated schema. Migrate your XML configuration using "--migrate-configuration"!',
                 );
             } else {
-                EventFacade::emitter()->testRunnerTriggeredPhpunitWarning(
+                EventFacade::emitter()->testRunnerTriggeredWarning(
                     "Test results may not be as expected because the XML configuration file did not pass validation:\n" .
                     $xmlConfiguration->validationErrors(),
                 );
@@ -834,7 +828,6 @@ final readonly class Merger
             $failOnWarning,
             $stopOnDefect,
             $stopOnDeprecation,
-            $specificDeprecationToStopOn,
             $stopOnError,
             $stopOnFailure,
             $stopOnIncomplete,

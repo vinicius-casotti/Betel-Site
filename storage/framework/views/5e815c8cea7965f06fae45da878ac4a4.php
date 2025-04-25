@@ -1,0 +1,1 @@
+<?php echo app('Illuminate\Foundation\Vite')(['resources/scss/icons.scss', 'resources/scss/style.scss']); ?><?php /**PATH /home/krushant/Downloads/Evea_laravel/resources/views/layouts/partials/head-css.blade.php ENDPATH**/ ?>

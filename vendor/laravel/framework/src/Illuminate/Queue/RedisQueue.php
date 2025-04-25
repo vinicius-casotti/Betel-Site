@@ -6,8 +6,6 @@ use Illuminate\Contracts\Queue\ClearableQueue;
 use Illuminate\Contracts\Queue\Queue as QueueContract;
 use Illuminate\Contracts\Redis\Factory as Redis;
 use Illuminate\Queue\Jobs\RedisJob;
-use Illuminate\Redis\Connections\PhpRedisClusterConnection;
-use Illuminate\Redis\Connections\PredisClusterConnection;
 use Illuminate\Support\Str;
 
 class RedisQueue extends Queue implements QueueContract, ClearableQueue
@@ -75,16 +73,16 @@ class RedisQueue extends Queue implements QueueContract, ClearableQueue
      * @param  int|null  $blockFor
      * @param  bool  $dispatchAfterCommit
      * @param  int  $migrationBatchSize
+     * @return void
      */
-    public function __construct(
-        Redis $redis,
-        $default = 'default',
-        $connection = null,
-        $retryAfter = 60,
-        $blockFor = null,
-        $dispatchAfterCommit = false,
-        $migrationBatchSize = -1,
-    ) {
+    public function __construct(Redis $redis,
+                                $default = 'default',
+                                $connection = null,
+                                $retryAfter = 60,
+                                $blockFor = null,
+                                $dispatchAfterCommit = false,
+                                $migrationBatchSize = -1)
+    {
         $this->redis = $redis;
         $this->default = $default;
         $this->blockFor = $blockFor;
@@ -119,25 +117,17 @@ class RedisQueue extends Queue implements QueueContract, ClearableQueue
      */
     public function bulk($jobs, $data = '', $queue = null)
     {
-        $connection = $this->getConnection();
-
-        $bulk = function () use ($jobs, $data, $queue) {
-            foreach ((array) $jobs as $job) {
-                if (isset($job->delay)) {
-                    $this->later($job->delay, $job, $data, $queue);
-                } else {
-                    $this->push($job, $data, $queue);
+        $this->getConnection()->pipeline(function () use ($jobs, $data, $queue) {
+            $this->getConnection()->transaction(function () use ($jobs, $data, $queue) {
+                foreach ((array) $jobs as $job) {
+                    if (isset($job->delay)) {
+                        $this->later($job->delay, $job, $data, $queue);
+                    } else {
+                        $this->push($job, $data, $queue);
+                    }
                 }
-            }
-        };
-
-        if ($connection instanceof PhpRedisClusterConnection) {
-            $connection->transaction($bulk);
-        } elseif ($connection instanceof PredisClusterConnection) {
-            $connection->pipeline($bulk);
-        } else {
-            $connection->pipeline(fn () => $connection->transaction($bulk));
-        }
+            });
+        });
     }
 
     /**

@@ -63,6 +63,7 @@ class BladeMapper
      *
      * @param  \Illuminate\Contracts\View\Factory  $factory
      * @param  \Illuminate\View\Compilers\BladeCompiler  $bladeCompiler
+     * @return void
      */
     public function __construct(Factory $factory, BladeCompiler $bladeCompiler)
     {
@@ -86,7 +87,7 @@ class BladeMapper
             $exception = $previous;
         }
 
-        $trace = (new Collection($exception->getTrace()))
+        $trace = Collection::make($exception->getTrace())
             ->map(function ($frame) {
                 if ($originalPath = $this->findCompiledView((string) Arr::get($frame, 'file', ''))) {
                     $frame['file'] = $originalPath;

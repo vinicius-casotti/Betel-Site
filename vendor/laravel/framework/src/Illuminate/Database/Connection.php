@@ -208,6 +208,7 @@ class Connection implements ConnectionInterface
      * @param  string  $database
      * @param  string  $tablePrefix
      * @param  array  $config
+     * @return void
      */
     public function __construct($pdo, $database = '', $tablePrefix = '', array $config = [])
     {
@@ -247,7 +248,9 @@ class Connection implements ConnectionInterface
      */
     protected function getDefaultQueryGrammar()
     {
-        return new QueryGrammar($this);
+        ($grammar = new QueryGrammar)->setConnection($this);
+
+        return $grammar;
     }
 
     /**
@@ -451,7 +454,7 @@ class Connection implements ConnectionInterface
      * @param  string  $query
      * @param  array  $bindings
      * @param  bool  $useReadPdo
-     * @return \Generator<int, \stdClass>
+     * @return \Generator
      */
     public function cursor($query, $bindings = [], $useReadPdo = true)
     {
@@ -464,7 +467,7 @@ class Connection implements ConnectionInterface
             // mode and prepare the bindings for the query. Once that's done we will be
             // ready to execute the query against the database and return the cursor.
             $statement = $this->prepared($this->getPdoForSelect($useReadPdo)
-                ->prepare($query));
+                              ->prepare($query));
 
             $this->bindValues(
                 $statement, $this->prepareBindings($bindings)
@@ -1623,26 +1626,24 @@ class Connection implements ConnectionInterface
     {
         $this->tablePrefix = $prefix;
 
+        $this->getQueryGrammar()->setTablePrefix($prefix);
+
         return $this;
     }
 
     /**
-     * Execute the given callback without table prefix.
+     * Set the table prefix and return the grammar.
      *
-     * @param  \Closure  $callback
-     * @return mixed
+     * @template TGrammar of \Illuminate\Database\Grammar
+     *
+     * @param  TGrammar  $grammar
+     * @return TGrammar
      */
-    public function withoutTablePrefix(Closure $callback): mixed
+    public function withTablePrefix(Grammar $grammar)
     {
-        $tablePrefix = $this->getTablePrefix();
+        $grammar->setTablePrefix($this->tablePrefix);
 
-        $this->setTablePrefix('');
-
-        try {
-            return $callback($this);
-        } finally {
-            $this->setTablePrefix($tablePrefix);
-        }
+        return $grammar;
     }
 
     /**
